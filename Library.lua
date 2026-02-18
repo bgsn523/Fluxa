@@ -1,6 +1,7 @@
 --[[ 
-    FLUXA UI LIBRARY v5 (Angular Tech)
-    Style: Sharp Corners (4px), Thin Strokes, Tech/Dark Theme
+    FLUXA UI LIBRARY v6 (Hybrid Style)
+    Frames: Angular (Tech feel)
+    Buttons/Toggles: Round (Soft feel)
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -12,7 +13,7 @@ local CoreGui = game:GetService("CoreGui")
 --// 1. Setup & Security
 local Fluxa = {}
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Fluxa_v5"
+ScreenGui.Name = "Fluxa_v6"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
@@ -25,17 +26,19 @@ else
     ScreenGui.Parent = CoreGui
 end
 
---// 2. Theme & Settings
+--// 2. Theme Settings
 Fluxa.Theme = {
-    Background  = Color3.fromRGB(18, 18, 22),      -- 배경
-    Sidebar     = Color3.fromRGB(24, 24, 28),      -- 사이드바
-    Element     = Color3.fromRGB(30, 30, 35),      -- 요소 배경
-    Hover       = Color3.fromRGB(38, 38, 44),      -- 호버 색상
-    Accent      = Color3.fromRGB(90, 140, 255),    -- 포인트 컬러 (Tech Blue)
-    Text        = Color3.fromRGB(230, 230, 235),   -- 텍스트
-    SubText     = Color3.fromRGB(120, 120, 130),   -- 보조 텍스트
-    Outline     = Color3.fromRGB(45, 45, 50),      -- 테두리 색상
-    Corner      = 4                                -- [중요] 각진 정도 (0: 완전 직각, 4: 살짝 각짐, 8: 둥금)
+    Background  = Color3.fromRGB(20, 22, 26),      -- 메인 배경
+    Sidebar     = Color3.fromRGB(25, 28, 33),      -- 사이드바
+    Element     = Color3.fromRGB(32, 35, 40),      -- 요소 배경
+    Hover       = Color3.fromRGB(42, 45, 52),      -- 호버 색상
+    Accent      = Color3.fromRGB(100, 130, 240),   -- 포인트 컬러 (Soft Blue)
+    Text        = Color3.fromRGB(240, 240, 245),   -- 텍스트
+    SubText     = Color3.fromRGB(140, 145, 155),   -- 보조 텍스트
+    Outline     = Color3.fromRGB(50, 50, 55),      -- 테두리 선
+    
+    FrameCorner = 4,  -- [각짐] 프레임, 윈도우, 그룹박스 등
+    BtnCorner   = 8   -- [둥글] 버튼, 슬라이더바, 탭버튼 등
 }
 Fluxa.Flags = {}
 Fluxa.Folder = "FluxaConfigs"
@@ -50,7 +53,7 @@ end
 local function AddCorner(parent, radius)
     Create("UICorner", {
         Parent = parent, 
-        CornerRadius = UDim.new(0, radius or Fluxa.Theme.Corner)
+        CornerRadius = UDim.new(0, radius)
     })
 end
 
@@ -67,7 +70,6 @@ local function Tween(obj, props, time)
     TweenService:Create(obj, TweenInfo.new(time or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
 
--- Drag Function
 local function MakeDraggable(trigger, object)
     local dragging, dragInput, dragStart, startPos
     trigger.InputBegan:Connect(function(input)
@@ -93,10 +95,10 @@ end
 
 --// 4. Main Library
 function Fluxa:Window(options)
-    local TitleText = options.Name or "FLUXA TERMINAL"
+    local TitleText = options.Name or "FLUXA v6"
     local WindowFuncs = {}
     
-    -- Main Window
+    -- Main Window (Angular Frame)
     local Main = Create("Frame", {
         Name = "Main", Parent = ScreenGui,
         BackgroundColor3 = Fluxa.Theme.Background,
@@ -104,37 +106,35 @@ function Fluxa:Window(options)
         Size = UDim2.new(0, 600, 0, 420),
         ClipsDescendants = true
     })
-    AddCorner(Main, 6) -- 윈도우는 살짝만 둥글게
-    AddStroke(Main, Fluxa.Theme.Outline, 1) -- 외곽선 추가
+    AddCorner(Main, Fluxa.Theme.FrameCorner) -- 각짐
+    AddStroke(Main, Fluxa.Theme.Outline, 1)
 
     -- Sidebar
     local Sidebar = Create("Frame", {
         Parent = Main, BackgroundColor3 = Fluxa.Theme.Sidebar,
-        Size = UDim2.new(0, 160, 1, 0), Position = UDim2.new(0, 0, 0, 0),
-        BorderSizePixel = 0
+        Size = UDim2.new(0, 160, 1, 0), Position = UDim2.new(0, 0, 0, 0)
     })
-    -- 사이드바 구분선
-    Create("Frame", {
+    Create("Frame", { -- Divider
         Parent = Sidebar, BackgroundColor3 = Fluxa.Theme.Outline,
         Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BorderSizePixel = 0
     })
 
-    -- Title Area
-    local TitleLabel = Create("TextLabel", {
+    -- Title
+    Create("TextLabel", {
         Parent = Sidebar, BackgroundTransparency = 1,
-        Size = UDim2.new(1, -20, 0, 50), Position = UDim2.new(0, 15, 0, 0),
+        Size = UDim2.new(1, -20, 0, 50), Position = UDim2.new(0, 20, 0, 0),
         Font = Enum.Font.GothamBold, Text = TitleText,
         TextColor3 = Fluxa.Theme.Accent, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left
     })
     
-    -- Tab Holder
+    -- Tab Container
     local TabContainer = Create("ScrollingFrame", {
         Parent = Sidebar, BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, -60), Position = UDim2.new(0, 0, 0, 60),
         ScrollBarThickness = 0, CanvasSize = UDim2.new(0,0,0,0)
     })
     local TabList = Create("UIListLayout", {
-        Parent = TabContainer, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4)
+        Parent = TabContainer, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6)
     })
     Create("UIPadding", {Parent = TabContainer, PaddingLeft = UDim.new(0, 10)})
 
@@ -144,7 +144,6 @@ function Fluxa:Window(options)
         Size = UDim2.new(1, -170, 1, -20), Position = UDim2.new(0, 170, 0, 10)
     })
     
-    -- Draggable Area (Top)
     local DragFrame = Create("Frame", {
         Parent = Main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 50)
     })
@@ -156,13 +155,13 @@ function Fluxa:Window(options)
     function WindowFuncs:Tab(name)
         local TabFuncs = {}
         
-        -- Tab Button
+        -- Tab Button (Round Style)
         local TabBtn = Create("TextButton", {
             Parent = TabContainer, BackgroundColor3 = Fluxa.Theme.Sidebar,
-            Size = UDim2.new(1, -12, 0, 32), AutoButtonColor = false,
+            Size = UDim2.new(1, -12, 0, 34), AutoButtonColor = false,
             Text = "", BackgroundTransparency = 1
         })
-        AddCorner(TabBtn, Fluxa.Theme.Corner) -- 각지게
+        AddCorner(TabBtn, Fluxa.Theme.BtnCorner) -- 둥금
 
         local TabText = Create("TextLabel", {
             Parent = TabBtn, BackgroundTransparency = 1,
@@ -171,15 +170,14 @@ function Fluxa:Window(options)
             TextColor3 = Fluxa.Theme.SubText, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
         })
         
-        -- Indicator (Side Bar)
+        -- Indicator (Round Pill)
         local Indicator = Create("Frame", {
             Parent = TabBtn, BackgroundColor3 = Fluxa.Theme.Accent,
-            Size = UDim2.new(0, 3, 1, -10), Position = UDim2.new(0, 0, 0, 5),
+            Size = UDim2.new(0, 4, 0, 16), Position = UDim2.new(0, 0, 0.5, -8),
             Transparency = 1
         })
-        AddCorner(Indicator, 2)
+        AddCorner(Indicator, 4) -- 완전 둥금
 
-        -- Page
         local Page = Create("ScrollingFrame", {
             Parent = Content, BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 1, 0), Visible = false,
@@ -187,7 +185,7 @@ function Fluxa:Window(options)
             CanvasSize = UDim2.new(0,0,0,0), BorderSizePixel = 0
         })
         local PageLayout = Create("UIListLayout", {
-            Parent = Page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8)
+            Parent = Page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10)
         })
         Create("UIPadding", {Parent = Page, PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10)})
 
@@ -202,11 +200,10 @@ function Fluxa:Window(options)
                 Tween(SelectedTab.Btn, {BackgroundTransparency = 1})
                 SelectedTab.Page.Visible = false
             end
-            
             SelectedTab = {Btn = TabBtn, Text = TabText, Indicator = Indicator, Page = Page}
             Tween(TabText, {TextColor3 = Fluxa.Theme.Text})
             Tween(Indicator, {Transparency = 0})
-            Tween(TabBtn, {BackgroundTransparency = 0.95, BackgroundColor3 = Fluxa.Theme.Text}) -- 미세한 배경 추가
+            Tween(TabBtn, {BackgroundTransparency = 0.95, BackgroundColor3 = Fluxa.Theme.Text})
             Page.Visible = true
         end
 
@@ -214,76 +211,71 @@ function Fluxa:Window(options)
         if #Tabs == 0 then Activate() end
         table.insert(Tabs, {Btn = TabBtn})
 
-        --// SECTIONS
         function TabFuncs:Section(text)
             local SectionFuncs = {}
             
-            -- Section Title
             local Label = Create("TextLabel", {
                 Parent = Page, BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28),
+                Size = UDim2.new(1, 0, 0, 26),
                 Font = Enum.Font.GothamBold, Text = string.upper(text),
                 TextColor3 = Fluxa.Theme.Accent, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left
             })
             Create("UIPadding", {Parent = Label, PaddingLeft = UDim.new(0, 2), PaddingTop = UDim.new(0, 10)})
 
-            --// TOGGLE
+            --// TOGGLE (Capsule Style - Round)
             function SectionFuncs:Toggle(text, default, callback)
                 local Toggled = default or false
                 Fluxa.Flags[text] = Toggled
                 
+                -- Container Frame (Angular)
                 local ToggleBtn = Create("TextButton", {
                     Parent = Page, BackgroundColor3 = Fluxa.Theme.Element,
-                    Size = UDim2.new(1, 0, 0, 38), AutoButtonColor = false, Text = ""
+                    Size = UDim2.new(1, 0, 0, 40), AutoButtonColor = false, Text = ""
                 })
-                AddCorner(ToggleBtn, Fluxa.Theme.Corner) -- 각지게
-                AddStroke(ToggleBtn, Fluxa.Theme.Outline, 1) -- 테두리 추가
+                AddCorner(ToggleBtn, Fluxa.Theme.FrameCorner) -- 틀은 각지게
+                AddStroke(ToggleBtn, Fluxa.Theme.Outline, 1)
                 
-                local Title = Create("TextLabel", {
+                Create("TextLabel", {
                     Parent = ToggleBtn, BackgroundTransparency = 1,
                     Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -60, 1, 0),
                     Font = Enum.Font.GothamMedium, Text = text,
                     TextColor3 = Fluxa.Theme.Text, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
                 })
 
-                -- Switch Container
+                -- Switch (Fully Round Capsule)
                 local Switch = Create("Frame", {
                     Parent = ToggleBtn, BackgroundColor3 = Fluxa.Theme.Sidebar,
-                    Position = UDim2.new(1, -42, 0.5, -9), Size = UDim2.new(0, 30, 0, 18)
+                    Position = UDim2.new(1, -48, 0.5, -11), Size = UDim2.new(0, 36, 0, 22)
                 })
-                AddCorner(Switch, 4) -- 스위치 박스도 각지게
-                AddStroke(Switch, Fluxa.Theme.Outline, 1)
+                AddCorner(Switch, 16) -- 완전 둥금 (캡슐 모양)
+                local SwitchStroke = AddStroke(Switch, Fluxa.Theme.Outline, 1)
                 
-                -- Inner Square (Knob)
+                -- Knob (Circle)
                 local Knob = Create("Frame", {
                     Parent = Switch, BackgroundColor3 = Fluxa.Theme.SubText,
-                    Position = UDim2.new(0, 3, 0.5, -6), Size = UDim2.new(0, 12, 0, 12)
+                    Position = UDim2.new(0, 3, 0.5, -8), Size = UDim2.new(0, 16, 0, 16)
                 })
-                AddCorner(Knob, 3) -- 내부도 살짝 각지게
+                AddCorner(Knob, 16) -- 완전 원형
 
                 local function Update()
                     Fluxa.Flags[text] = Toggled
                     if Toggled then
                         Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Accent})
                         Tween(Switch.UIStroke, {Color = Fluxa.Theme.Accent})
-                        Tween(Knob, {Position = UDim2.new(1, -15, 0.5, -6), BackgroundColor3 = Color3.new(1,1,1)})
+                        Tween(Knob, {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.new(1,1,1)})
                     else
                         Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Sidebar})
                         Tween(Switch.UIStroke, {Color = Fluxa.Theme.Outline})
-                        Tween(Knob, {Position = UDim2.new(0, 3, 0.5, -6), BackgroundColor3 = Fluxa.Theme.SubText})
+                        Tween(Knob, {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Fluxa.Theme.SubText})
                     end
                     if callback then callback(Toggled) end
                 end
                 
                 if default then Update() end
-
-                ToggleBtn.MouseButton1Click:Connect(function()
-                    Toggled = not Toggled
-                    Update()
-                end)
+                ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
             end
 
-            --// SLIDER
+            --// SLIDER (Round Bar)
             function SectionFuncs:Slider(text, min, max, default, callback)
                 Fluxa.Flags[text] = default or min
                 local Value = default or min
@@ -292,10 +284,10 @@ function Fluxa:Window(options)
                     Parent = Page, BackgroundColor3 = Fluxa.Theme.Element,
                     Size = UDim2.new(1, 0, 0, 50)
                 })
-                AddCorner(SliderFrame, Fluxa.Theme.Corner)
+                AddCorner(SliderFrame, Fluxa.Theme.FrameCorner) -- 틀은 각지게
                 AddStroke(SliderFrame, Fluxa.Theme.Outline, 1)
 
-                local Title = Create("TextLabel", {
+                Create("TextLabel", {
                     Parent = SliderFrame, BackgroundTransparency = 1,
                     Position = UDim2.new(0, 12, 0, 8), Size = UDim2.new(1, -30, 0, 20),
                     Font = Enum.Font.GothamMedium, Text = text,
@@ -309,17 +301,19 @@ function Fluxa:Window(options)
                     TextColor3 = Fluxa.Theme.Accent, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right
                 })
 
+                -- Track (Round)
                 local Track = Create("Frame", {
                     Parent = SliderFrame, BackgroundColor3 = Fluxa.Theme.Sidebar,
                     Position = UDim2.new(0, 12, 0, 34), Size = UDim2.new(1, -24, 0, 6)
                 })
-                AddCorner(Track, 3)
+                AddCorner(Track, 8) -- 둥금
 
+                -- Fill (Round)
                 local Fill = Create("Frame", {
                     Parent = Track, BackgroundColor3 = Fluxa.Theme.Accent,
                     Size = UDim2.new((Value - min) / (max - min), 0, 1, 0)
                 })
-                AddCorner(Fill, 3)
+                AddCorner(Fill, 8) -- 둥금
 
                 local Trigger = Create("TextButton", {
                     Parent = SliderFrame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Text = ""
@@ -348,19 +342,19 @@ function Fluxa:Window(options)
                 end)
             end
 
-            --// BUTTON
+            --// BUTTON (Round)
             function SectionFuncs:Button(text, callback)
                 local Btn = Create("TextButton", {
                     Parent = Page, BackgroundColor3 = Fluxa.Theme.Element,
-                    Size = UDim2.new(1, 0, 0, 36), AutoButtonColor = false,
+                    Size = UDim2.new(1, 0, 0, 38), AutoButtonColor = false,
                     Font = Enum.Font.GothamMedium, Text = text,
                     TextColor3 = Fluxa.Theme.Text, TextSize = 13
                 })
-                AddCorner(Btn, Fluxa.Theme.Corner)
+                AddCorner(Btn, Fluxa.Theme.BtnCorner) -- 버튼은 둥글게 (8px)
                 AddStroke(Btn, Fluxa.Theme.Outline, 1)
                 
                 Btn.MouseEnter:Connect(function() 
-                    Tween(Btn, {BackgroundColor3 = Fluxa.Theme.Hover}) 
+                    Tween(Btn, {BackgroundColor3 = Fluxa.Theme.Hover})
                     Tween(Btn.UIStroke, {Color = Fluxa.Theme.SubText})
                 end)
                 Btn.MouseLeave:Connect(function() 
@@ -375,15 +369,14 @@ function Fluxa:Window(options)
                 end)
             end
             
-            --// DROPDOWN
+            --// DROPDOWN (Slightly Rounded)
             function SectionFuncs:Dropdown(text, items, callback)
                 local Open = false
-                
                 local DropFrame = Create("Frame", {
                     Parent = Page, BackgroundColor3 = Fluxa.Theme.Element,
                     Size = UDim2.new(1, 0, 0, 38), ClipsDescendants = true
                 })
-                AddCorner(DropFrame, Fluxa.Theme.Corner)
+                AddCorner(DropFrame, Fluxa.Theme.FrameCorner) -- 틀은 각지게
                 AddStroke(DropFrame, Fluxa.Theme.Outline, 1)
                 
                 local Title = Create("TextLabel", {
@@ -422,7 +415,7 @@ function Fluxa:Window(options)
                             Font = Enum.Font.Gotham, Text = item,
                             TextColor3 = Fluxa.Theme.SubText, TextSize = 12
                         })
-                        AddCorner(ItemBtn, 3)
+                        AddCorner(ItemBtn, 6) -- 리스트 아이템은 약간 둥글게
                         
                         ItemBtn.MouseButton1Click:Connect(function()
                             Title.Text = text .. ": " .. item
@@ -435,12 +428,11 @@ function Fluxa:Window(options)
                     end
                 end
                 Refresh()
-
+                
                 Trigger.MouseButton1Click:Connect(function()
                     Open = not Open
                     if Open then
-                        local contentHeight = ListLayout.AbsoluteContentSize.Y + 48
-                        Tween(DropFrame, {Size = UDim2.new(1, 0, 0, contentHeight)})
+                        Tween(DropFrame, {Size = UDim2.new(1, 0, 0, ListLayout.AbsoluteContentSize.Y + 48)})
                         Arrow.Text = "-"
                     else
                         Tween(DropFrame, {Size = UDim2.new(1, 0, 0, 38)})
@@ -454,7 +446,6 @@ function Fluxa:Window(options)
         return TabFuncs
     end
     
-    -- Config (Example)
     local SettingTab = WindowFuncs:Tab("Settings")
     local SettingSec = SettingTab:Section("Data")
     SettingSec:Button("Save Config", function() end)
