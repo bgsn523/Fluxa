@@ -1,7 +1,6 @@
 --[[ 
-    FLUXA UI LIBRARY v10 (ColorPicker Fix)
-    - Fix: ColorPicker Drag Logic (Now uses RenderStepped for smoothness)
-    - Fix: Accurate HSV Gradient Layering
+    FLUXA UI LIBRARY v11 (Fixed ColorPicker Visuals)
+    - Fix: ColorPicker Gradient Layering (Correctly shows White/Black gradients)
     - Style: Hybrid (Angular Frames + Round Buttons)
 ]]
 
@@ -10,14 +9,11 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
 --// 1. Setup & Security
 local Fluxa = {}
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Fluxa_v10"
+ScreenGui.Name = "Fluxa_v11"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
@@ -96,7 +92,7 @@ end
 
 --// 4. Main Library
 function Fluxa:Window(options)
-    local TitleText = options.Name or "FLUXA v10"
+    local TitleText = options.Name or "FLUXA v11"
     local WindowFuncs = {}
     
     local Main = Create("Frame", {
@@ -294,7 +290,7 @@ function Fluxa:Window(options)
                 Trigger.MouseButton1Click:Connect(function() Open = not Open; if Open then Tween(DropFrame, {Size = UDim2.new(1, 0, 0, ListLayout.AbsoluteContentSize.Y + 48)}); Arrow.Text = "-" else Tween(DropFrame, {Size = UDim2.new(1, 0, 0, 38)}); Arrow.Text = "+" end end)
             end
 
-            --// COLOR PICKER (FIXED LOGIC)
+            --// COLOR PICKER (VISUAL FIX)
             function SectionFuncs:ColorPicker(text, default, callback)
                 local Color = default or Color3.fromRGB(255, 255, 255)
                 local h, s, v = Color:ToHSV()
@@ -307,26 +303,44 @@ function Fluxa:Window(options)
                 
                 local Palette = Create("Frame", { Parent = PickerFrame, BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 45), Size = UDim2.new(1, 0, 0, 130) })
                 
-                -- SV Box (Saturation / Value)
-                local SVBox = Create("Frame", { Parent = Palette, Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -24, 0, 100), BackgroundColor3 = Color3.fromHSV(h, 1, 1) }); AddCorner(SVBox, 4)
-                -- White Gradient (Left to Right)
-                local WhiteG = Create("ImageLabel", { Parent = SVBox, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Image = "rbxassetid://4155801252", ImageColor3 = Color3.new(1,1,1), ZIndex = 2 }); AddCorner(WhiteG, 4) -- Fallback or code gradient
-                -- We use UIGradient for pure code approach
-                WhiteG:Destroy()
+                -- [[ 1. SV BOX ]]
+                -- Base Frame: Shows Hue
+                local SVBox = Create("Frame", { Parent = Palette, Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -24, 0, 100), BackgroundColor3 = Color3.fromHSV(h, 1, 1), ZIndex = 1 }); AddCorner(SVBox, 4)
                 
-                local SatGradient = Create("Frame", { Parent = SVBox, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 0, ZIndex = 2, BackgroundColor3 = Color3.new(1,1,1) }); AddCorner(SatGradient, 4)
-                local SatG = Create("UIGradient", { Parent = SatGradient, Color = ColorSequence.new(Color3.new(1,1,1), Color3.new(1,1,1)), Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1)} })
-                
-                local ValGradient = Create("Frame", { Parent = SVBox, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 0, ZIndex = 3, BackgroundColor3 = Color3.new(0,0,0) }); AddCorner(ValGradient, 4)
-                local ValG = Create("UIGradient", { Parent = ValGradient, Rotation = 90, Color = ColorSequence.new(Color3.new(0,0,0), Color3.new(0,0,0)), Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(1,0)} })
+                -- Layer 1: Saturation (White Gradient: Left to Right)
+                local SatLayer = Create("Frame", { Parent = SVBox, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, ZIndex = 2 }); AddCorner(SatLayer, 4)
+                Create("UIGradient", { 
+                    Parent = SatLayer, 
+                    Color = ColorSequence.new(Color3.new(1,1,1)), 
+                    Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1)} 
+                })
+                -- Apply explicit White Background to utilize UIGradient
+                SatLayer.BackgroundColor3 = Color3.new(1,1,1)
+                SatLayer.BackgroundTransparency = 0
 
-                local PickerDot = Create("Frame", { Parent = ValGradient, Size = UDim2.new(0, 4, 0, 4), Position = UDim2.new(s, -2, 1-v, -2), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 4 }); AddCorner(PickerDot, 4)
+                -- Layer 2: Value (Black Gradient: Top to Bottom)
+                local ValLayer = Create("Frame", { Parent = SVBox, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, ZIndex = 3 }); AddCorner(ValLayer, 4)
+                Create("UIGradient", { 
+                    Parent = ValLayer, 
+                    Rotation = 90, 
+                    Color = ColorSequence.new(Color3.new(0,0,0)), 
+                    Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(1,0)} 
+                })
+                ValLayer.BackgroundColor3 = Color3.new(0,0,0)
+                ValLayer.BackgroundTransparency = 0
                 
-                -- Hue Slider
+                -- Picker Dot (Highest ZIndex)
+                local PickerDot = Create("Frame", { Parent = SVBox, Size = UDim2.new(0, 4, 0, 4), Position = UDim2.new(s, -2, 1-v, -2), BackgroundColor3 = Color3.new(1,1,1), ZIndex = 10 }); AddCorner(PickerDot, 4)
+                -- Add Stroke to dot for visibility
+                AddStroke(PickerDot, Color3.new(0,0,0), 1)
+
+                -- [[ 2. HUE SLIDER ]]
                 local HueBar = Create("Frame", { Parent = Palette, Position = UDim2.new(0, 12, 0, 110), Size = UDim2.new(1, -24, 0, 10), BackgroundColor3 = Color3.new(1,1,1) }); AddCorner(HueBar, 4)
                 Create("UIGradient", { Parent = HueBar, Color = ColorSequence.new{ ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.167, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.333, Color3.new(0,1,0)), ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.667, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.833, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0)) } })
                 local HueDot = Create("Frame", { Parent = HueBar, Size = UDim2.new(0, 4, 1, 0), Position = UDim2.new(h, -2, 0, 0), BackgroundColor3 = Color3.new(1,1,1) }); AddCorner(HueDot, 2)
+                AddStroke(HueDot, Color3.new(0,0,0), 1)
 
+                -- Logic
                 local function UpdateColor()
                     local newColor = Color3.fromHSV(h, s, v)
                     Preview.BackgroundColor3 = newColor
@@ -336,7 +350,6 @@ function Fluxa:Window(options)
                     if callback then callback(newColor) end
                 end
 
-                -- Hue Logic
                 local function UpdateHue()
                     local mouse = UserInputService:GetMouseLocation()
                     local relativeX = math.clamp(mouse.X - HueBar.AbsolutePosition.X, 0, HueBar.AbsoluteSize.X)
@@ -352,28 +365,22 @@ function Fluxa:Window(options)
                         c = RunService.RenderStepped:Connect(function()
                             if not dragging then c:Disconnect() return end
                             UpdateHue()
-                            if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                                dragging = false
-                                c:Disconnect()
-                            end
+                            if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then dragging = false; c:Disconnect() end
                         end)
                     end
                 end)
 
-                -- SV Logic
                 local function UpdateSV()
                     local mouse = UserInputService:GetMouseLocation()
                     local relativeX = math.clamp(mouse.X - SVBox.AbsolutePosition.X, 0, SVBox.AbsoluteSize.X)
-                    local relativeY = math.clamp(mouse.Y - SVBox.AbsolutePosition.Y - 36, 0, SVBox.AbsoluteSize.Y) -- 36 is offset approximation, using GuiInset
-                    -- Better accurate calculation:
-                    relativeY = math.clamp(mouse.Y - SVBox.AbsolutePosition.Y, 0, SVBox.AbsoluteSize.Y) -- GuiInset ignored by GetMouseLocation generally in ScreenGuis? No, need to check.
-                    
+                    local relativeY = math.clamp(mouse.Y - SVBox.AbsolutePosition.Y - 36, 0, SVBox.AbsoluteSize.Y) -- 36 Gui Inset adjustment
                     s = relativeX / SVBox.AbsoluteSize.X
                     v = 1 - (relativeY / SVBox.AbsoluteSize.Y)
                     UpdateColor()
                 end
 
-                ValGradient.InputBegan:Connect(function(input)
+                -- Input on Top Layer (ValLayer) because it's ZIndex 3
+                ValLayer.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         local dragging = true
                         UpdateSV()
@@ -381,10 +388,7 @@ function Fluxa:Window(options)
                         c = RunService.RenderStepped:Connect(function()
                             if not dragging then c:Disconnect() return end
                             UpdateSV()
-                            if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                                dragging = false
-                                c:Disconnect()
-                            end
+                            if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then dragging = false; c:Disconnect() end
                         end)
                     end
                 end)
