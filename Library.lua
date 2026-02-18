@@ -1,8 +1,8 @@
 --[[ 
-    FLUXA UI LIBRARY v7 (Bug Fixes)
-    - Dropdown: Added Clear('x') button
-    - Slider: Fixed dragging issue (ZIndex & Logic update)
+    FLUXA UI LIBRARY v8 (Layout Fix)
+    - Fixed: Content area clipping with Sidebar (Increased Margins)
     - Style: Hybrid (Angular Frames + Round Buttons)
+    - Features: Dropdown Clear, Slider Fix included
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -14,7 +14,7 @@ local CoreGui = game:GetService("CoreGui")
 --// 1. Setup & Security
 local Fluxa = {}
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Fluxa_v7"
+ScreenGui.Name = "Fluxa_v8"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
@@ -93,7 +93,7 @@ end
 
 --// 4. Main Library
 function Fluxa:Window(options)
-    local TitleText = options.Name or "FLUXA v7"
+    local TitleText = options.Name or "FLUXA v8"
     local WindowFuncs = {}
     
     -- Main Window
@@ -107,12 +107,12 @@ function Fluxa:Window(options)
     AddCorner(Main, Fluxa.Theme.FrameCorner)
     AddStroke(Main, Fluxa.Theme.Outline, 1)
 
-    -- Sidebar
+    -- Sidebar (Left)
     local Sidebar = Create("Frame", {
         Parent = Main, BackgroundColor3 = Fluxa.Theme.Sidebar,
         Size = UDim2.new(0, 160, 1, 0), Position = UDim2.new(0, 0, 0, 0)
     })
-    Create("Frame", { -- Divider
+    Create("Frame", { -- Divider Line
         Parent = Sidebar, BackgroundColor3 = Fluxa.Theme.Outline,
         Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BorderSizePixel = 0
     })
@@ -136,10 +136,13 @@ function Fluxa:Window(options)
     })
     Create("UIPadding", {Parent = TabContainer, PaddingLeft = UDim.new(0, 10)})
 
-    -- Content Area
+    -- Content Area (수정됨: 위치와 크기 조정으로 여백 확보)
     local Content = Create("Frame", {
         Parent = Main, BackgroundTransparency = 1,
-        Size = UDim2.new(1, -170, 1, -20), Position = UDim2.new(0, 170, 0, 10)
+        -- 기존: Position 170 / Size 1, -170
+        -- 수정: Position 180 (사이드바와 간격 20px) / Size 1, -190 (오른쪽 여백 10px 확보)
+        Position = UDim2.new(0, 180, 0, 10), 
+        Size = UDim2.new(1, -190, 1, -20)
     })
     
     local DragFrame = Create("Frame", {
@@ -183,7 +186,8 @@ function Fluxa:Window(options)
         local PageLayout = Create("UIListLayout", {
             Parent = Page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10)
         })
-        Create("UIPadding", {Parent = Page, PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10)})
+        -- 페이지 내부 패딩 추가 (잘림 방지)
+        Create("UIPadding", {Parent = Page, PaddingTop = UDim.new(0, 5), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 12), PaddingBottom = UDim.new(0, 10)})
 
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             Page.CanvasSize = UDim2.new(0,0,0, PageLayout.AbsoluteContentSize.Y + 20)
@@ -268,7 +272,7 @@ function Fluxa:Window(options)
                 ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
             end
 
-            --// SLIDER (Fixed Dragging)
+            --// SLIDER
             function SectionFuncs:Slider(text, min, max, default, callback)
                 Fluxa.Flags[text] = default or min
                 local Value = default or min
@@ -306,13 +310,12 @@ function Fluxa:Window(options)
                 })
                 AddCorner(Fill, 8)
 
-                -- Trigger fixed: ZIndex higher to catch inputs
                 local Trigger = Create("TextButton", {
                     Parent = SliderFrame, 
                     BackgroundTransparency = 1, 
                     Size = UDim2.new(1, 0, 1, 0), 
                     Text = "",
-                    ZIndex = 10 -- Ensure it's on top of everything
+                    ZIndex = 10
                 })
 
                 local function Update(input)
@@ -330,14 +333,11 @@ function Fluxa:Window(options)
                         Update(input)
                         local move
                         local release
-                        
-                        -- Use InputChanged on Service to catch fast movements
                         move = UserInputService.InputChanged:Connect(function(moveInput)
                             if moveInput.UserInputType == Enum.UserInputType.MouseMovement then
                                 Update(moveInput)
                             end
                         end)
-                        
                         release = UserInputService.InputEnded:Connect(function(endInput)
                             if endInput.UserInputType == Enum.UserInputType.MouseButton1 then
                                 move:Disconnect()
@@ -375,7 +375,7 @@ function Fluxa:Window(options)
                 end)
             end
             
-            --// DROPDOWN (Fixed: Added Clear Button)
+            --// DROPDOWN
             function SectionFuncs:Dropdown(text, items, callback)
                 local Open = false
                 local DropFrame = Create("Frame", {
@@ -387,12 +387,11 @@ function Fluxa:Window(options)
                 
                 local Title = Create("TextLabel", {
                     Parent = DropFrame, BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -65, 0, 38), -- Reduced width to fit clear button
+                    Position = UDim2.new(0, 12, 0, 0), Size = UDim2.new(1, -65, 0, 38),
                     Font = Enum.Font.GothamMedium, Text = text,
                     TextColor3 = Fluxa.Theme.Text, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left
                 })
                 
-                -- Clear Button (X)
                 local ClearBtn = Create("TextButton", {
                     Parent = DropFrame, BackgroundTransparency = 1,
                     Position = UDim2.new(1, -50, 0, 0), Size = UDim2.new(0, 20, 0, 38),
@@ -421,11 +420,10 @@ function Fluxa:Window(options)
                 })
                 Create("UIPadding", {Parent = List, PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)})
                 
-                -- Clear Logic
                 ClearBtn.MouseButton1Click:Connect(function()
-                    Title.Text = text -- Reset Title
+                    Title.Text = text
                     Title.TextColor3 = Fluxa.Theme.Text
-                    if callback then callback(nil) end -- Return nil
+                    if callback then callback(nil) end
                     ClearBtn.Visible = false
                 end)
 
@@ -444,10 +442,7 @@ function Fluxa:Window(options)
                             Title.Text = text .. ": " .. item
                             Title.TextColor3 = Fluxa.Theme.Accent
                             if callback then callback(item) end
-                            
-                            -- Show Clear Button
                             ClearBtn.Visible = true
-                            
                             Open = false
                             Tween(DropFrame, {Size = UDim2.new(1, 0, 0, 38)})
                             Arrow.Text = "+"
