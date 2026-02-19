@@ -412,30 +412,92 @@ function Fluxa:Window(options)
         end
         return SectionFuncs
     end
-    --// SETTINGS TAB //--
+--// 5. SETTINGS TAB //--
+    -- LayoutOrder를 9999로 설정하여 항상 다른 탭들보다 아래에 위치하게 합니다.
     local SettingsBtn, SettingsText, SettingsInd, SettingsPage = CreateTabBtn("Settings", TabContainer, 9999)
     local SettingsTabObj = {Btn = SettingsBtn, Text = SettingsText, Indicator = SettingsInd, Page = SettingsPage}
-    SettingsBtn.MouseButton1Click:Connect(function() ActivateTab(SettingsTabObj) end)
+    
+    SettingsBtn.MouseButton1Click:Connect(function() 
+        ActivateTab(SettingsTabObj) 
+    end)
 
     local SetSec = CreateSection(SettingsPage)
+
+    -- [[ CONFIG MANAGER GUI ]] --
     SetSec:Toggle("Config Manager", true)
     local CfgName = "default"
-    SetSec:TextBox("Config Name", function(t) CfgName = t end)
-    local function GetConfigs() if not listfiles then return {} end; local files = listfiles(Fluxa.ConfigFolder); local names = {}; for _, file in pairs(files) do local name = file:match("([^/]+)%.json$"); if name then table.insert(names, name) end end; return names end
-    SetSec:Dropdown("Select Config", GetConfigs(), function(val) CfgName = val end)
-    SetSec:Button("Save Config", function() if writefile then writefile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json", HttpService:JSONEncode(Fluxa.Flags)) end end)
-    SetSec:Button("Load Config", function() if readfile and isfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json") then local data = HttpService:JSONDecode(readfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json")); Fluxa.Flags = data end end)
+    SetSec:TextBox("Config Name", function(t) 
+        CfgName = t 
+    end)
+    
+    local function GetConfigs() 
+        if not listfiles then return {} end 
+        local files = listfiles(Fluxa.ConfigFolder) 
+        local names = {} 
+        for _, file in pairs(files) do 
+            local name = file:match("([^/]+)%.json$") 
+            if name then table.insert(names, name) end 
+        end 
+        return names 
+    end
+
+    SetSec:Dropdown("Select Config", GetConfigs(), function(val) 
+        CfgName = val 
+    end)
+    
+    SetSec:Button("Save Config", function() 
+        if writefile then 
+            writefile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json", HttpService:JSONEncode(Fluxa.Flags)) 
+        end 
+    end)
+    
+    SetSec:Button("Load Config", function() 
+        if readfile and isfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json") then 
+            local data = HttpService:JSONDecode(readfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json")) 
+            Fluxa.Flags = data 
+        end 
+    end)
+
+    -- [[ THEME MANAGER GUI ]] --
     SetSec:Toggle("Theme Manager", true)
-    local function GetThemes() if not listfiles then return {} end; local files = listfiles(Fluxa.ThemeFolder); local names = {}; for _, file in pairs(files) do local name = file:match("([^/]+)%.json$"); if name then table.insert(names, name) end end; return names end
+    local function GetThemes() 
+        if not listfiles then return {} end 
+        local files = listfiles(Fluxa.ThemeFolder) 
+        local names = {} 
+        for _, file in pairs(files) do 
+            local name = file:match("([^/]+)%.json$") 
+            if name then table.insert(names, name) end 
+        end 
+        return names 
+    end
+    
     local ThemeName = "default"
-    SetSec:TextBox("Theme Name", function(t) ThemeName = t end)
-    SetSec:Dropdown("Select Theme", GetThemes(), function(val) ThemeName = val end)
-    SetSec:Button("Save Theme", function() if writefile then writefile(Fluxa.ThemeFolder .. "/" .. ThemeName .. ".json", HttpService:JSONEncode(Fluxa.Theme)) end end)
+    SetSec:TextBox("Theme Name", function(t) 
+        ThemeName = t 
+    end)
+    
+    SetSec:Dropdown("Select Theme", GetThemes(), function(val) 
+        ThemeName = val 
+    end)
+
+    SetSec:Button("Save Theme", function() 
+        if writefile then 
+            writefile(Fluxa.ThemeFolder .. "/" .. ThemeName .. ".json", HttpService:JSONEncode(Fluxa.Theme)) 
+        end 
+    end)
+
+    -- [[ THEME CUSTOMIZER GUI ]] --
     SetSec:Toggle("Theme Customizer", true)
     local keys = {"Accent", "Background", "Sidebar", "Element", "Text", "SubText", "Outline"}
-    for _, key in pairs(keys) do SetSec:ColorPicker(key, Fluxa.Theme[key], function(color) Fluxa.Theme[key] = color; Fluxa:UpdateTheme() end) end
+    for _, key in pairs(keys) do 
+        SetSec:ColorPicker(key, Fluxa.Theme[key], function(color) 
+            Fluxa.Theme[key] = color 
+            Fluxa:UpdateTheme() -- 실시간 테마 반영
+        end) 
+    end
 
-    return WindowFuncs
-end
+    -- [핵심] WindowFuncs를 반환하여 Window:Tab() 호출이 가능하게 합니다.
+    return WindowFuncs 
+end -- Fluxa:Window 함수 종료
 
-return Fluxa
+return Fluxa -- 라이브러리 테이블 반환
