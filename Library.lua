@@ -140,8 +140,10 @@ end
 --// 4. Main Library
 function Fluxa:Window(options)
     local TitleText = options.Name or "FLUXA v15"
-    local IsFlat = options.Flat or false -- New Option: Flat (Merged) or Separated
-    local WindowFuncs = {}
+    local IsFlat = options.Flat or false 
+    
+    -- [중요] 여기서 WindowFuncs 테이블을 먼저 생성해야 합니다.
+    local WindowFuncs = {} 
     
     -- Main Window Container
     local Main = Register(Create("Frame", {
