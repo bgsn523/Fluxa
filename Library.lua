@@ -412,40 +412,6 @@ function Fluxa:Window(options)
         end
         return SectionFuncs
     end
-    
--- [수정할 코드 영역]
-    function WindowFuncs:Tab(name)
-        local Btn, Text, Ind, Page = CreateTabBtn(name, TabContainer, 0)
-        local TabObj = {Btn = Btn, Text = Text, Indicator = Ind, Page = Page}
-        table.insert(Tabs, TabObj)
-        
-        Btn.MouseButton1Click:Connect(function() ActivateTab(TabObj) end)
-        if #Tabs == 1 then ActivateTab(TabObj) end
-        
-        -- 이 함수가 Section 함수 위쪽에 정의되어 있어야 합니다.
-        local function AddHeader(text)
-            if #Page:GetChildren() > 2 then
-                Create("Frame", {Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 10)})
-                Register(Create("Frame", {Parent = Page, BackgroundColor3 = Fluxa.Theme.Outline, Size = UDim2.new(1, -10, 0, 1), BackgroundTransparency = 0.5}), "Outline")
-                Create("Frame", {Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 6)})
-            end
-            local Label = Register(Create("TextLabel", {
-                Parent = Page, BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28),
-                Font = Enum.Font.GothamBold, Text = string.upper(text),
-                TextColor3 = Fluxa.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left
-            }), "Accent")
-            Create("UIPadding", {Parent = Label, PaddingLeft = UDim.new(0, 4)})
-        end
-
-        local TabFuncs = {}
-        function TabFuncs:Section(text)
-            AddHeader(text) -- 여기서 nil 오류가 났던 것입니다. 위에서 정의한 이름을 확인하세요.
-            return CreateSection(Page)
-        end
-        return TabFuncs
-    end
-
     --// SETTINGS TAB //--
     local SettingsBtn, SettingsText, SettingsInd, SettingsPage = CreateTabBtn("Settings", TabContainer, 9999)
     local SettingsTabObj = {Btn = SettingsBtn, Text = SettingsText, Indicator = SettingsInd, Page = SettingsPage}
