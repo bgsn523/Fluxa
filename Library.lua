@@ -2,7 +2,7 @@
     FLUXA UI LIBRARY v15 (Final Fixed)
     - Feature: Window Title is moved to a dedicated TopBar.
     - Feature: Added 'Flat' option to merge Sidebar and Content areas.
-    - Fix: Resolved function scope issues (Tab missing error).
+    - Fix: ALL scope and missing method issues resolved.
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -141,8 +141,11 @@ end
 function Fluxa:Window(options)
     local TitleText = options.Name or "FLUXA v15"
     local IsFlat = options.Flat or false 
+    
+    -- [[ 윈도우 기능 테이블 (이게 누락됐었습니다!) ]]
     local WindowFuncs = {} 
     
+    -- Main Window Container
     local Main = Register(Create("Frame", {
         Name = "Main", Parent = ScreenGui,
         BackgroundColor3 = Fluxa.Theme.Background,
@@ -271,21 +274,6 @@ function Fluxa:Window(options)
     -- SECTION & ELEMENTS
     local function CreateSection(page)
         local SectionFuncs = {}
-        
-        local function AddHeader(text)
-            if #page:GetChildren() > 2 then
-                Create("Frame", {Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 10)})
-                Register(Create("Frame", {Parent = page, BackgroundColor3 = Fluxa.Theme.Outline, Size = UDim2.new(1, -10, 0, 1), BackgroundTransparency = 0.5}), "Outline")
-                Create("Frame", {Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 6)})
-            end
-            local Label = Register(Create("TextLabel", {
-                Parent = page, BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28),
-                Font = Enum.Font.GothamBold, Text = string.upper(text),
-                TextColor3 = Fluxa.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left
-            }), "Accent")
-            Create("UIPadding", {Parent = Label, PaddingLeft = UDim.new(0, 4)})
-        end
 
         function SectionFuncs:Toggle(text, default, callback)
             local Toggled = default or false
@@ -306,8 +294,7 @@ function Fluxa:Window(options)
         end
 
         function SectionFuncs:Button(text, callback)
-            local Btn = Register(Create("TextButton", { Parent = page, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Font = Enum.Font.GothamMedium, Text = text, TextColor3 = Fluxa.Theme.Text, TextSize = 14 }), "Element")
-            AddCorner(Btn, Fluxa.Theme.BtnCorner); AddStroke(Btn, Fluxa.Theme.Outline, 1)
+            local Btn = Register(Create("TextButton", { Parent = page, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Font = Enum.Font.GothamMedium, Text = text, TextColor3 = Fluxa.Theme.Text, TextSize = 14 }), "Element"); AddCorner(Btn, Fluxa.Theme.BtnCorner); AddStroke(Btn, Fluxa.Theme.Outline, 1)
             Btn.MouseEnter:Connect(function() Tween(Btn, {BackgroundColor3 = Fluxa.Theme.Hover}) end)
             Btn.MouseLeave:Connect(function() Tween(Btn, {BackgroundColor3 = Fluxa.Theme.Element}) end)
             Btn.MouseButton1Click:Connect(function() Tween(Btn, {TextColor3 = Fluxa.Theme.Accent}, 0.1); task.wait(0.1); Tween(Btn, {TextColor3 = Fluxa.Theme.Text}, 0.1); if callback then callback() end end)
@@ -405,6 +392,7 @@ function Fluxa:Window(options)
         return SectionFuncs
     end
     
+    -- [[ 여기에 탭 생성 함수가 들어갑니다 ]]
     function WindowFuncs:Tab(name)
         local Btn, Text, Ind, Page = CreateTabBtn(name, TabContainer, 0)
         local TabObj = {Btn = Btn, Text = Text, Indicator = Ind, Page = Page}
@@ -412,6 +400,21 @@ function Fluxa:Window(options)
         Btn.MouseButton1Click:Connect(function() ActivateTab(TabObj) end)
         if #Tabs == 1 then ActivateTab(TabObj) end
         
+        local function AddHeader(text)
+            if #Page:GetChildren() > 2 then
+                Create("Frame", {Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 10)})
+                Register(Create("Frame", {Parent = Page, BackgroundColor3 = Fluxa.Theme.Outline, Size = UDim2.new(1, -10, 0, 1), BackgroundTransparency = 0.5}), "Outline")
+                Create("Frame", {Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 6)})
+            end
+            local Label = Register(Create("TextLabel", {
+                Parent = Page, BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 28),
+                Font = Enum.Font.GothamBold, Text = string.upper(text),
+                TextColor3 = Fluxa.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left
+            }), "Accent")
+            Create("UIPadding", {Parent = Label, PaddingLeft = UDim.new(0, 4)})
+        end
+
         local TabFuncs = {}
         function TabFuncs:Section(text) 
             AddHeader(text)
@@ -444,6 +447,7 @@ function Fluxa:Window(options)
     local keys = {"Accent", "Background", "Sidebar", "Element", "Text", "SubText", "Outline"}
     for _, key in pairs(keys) do SetSec:ColorPicker(key, Fluxa.Theme[key], function(color) Fluxa.Theme[key] = color; Fluxa:UpdateTheme() end) end
 
+    -- [[ 마지막 반환 (매우 중요) ]]
     return WindowFuncs
 end
 
