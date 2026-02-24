@@ -324,43 +324,43 @@ function Fluxa:Window(options)
             ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
         end
 
-        -- [추가할 코드] 확장형 토글 (하위 요소를 가질 수 있는 토글)
         function SectionFuncs:ExpandableToggle(text, default, callback)
             local Toggled = default or false
             Fluxa.Flags[text] = Toggled
             
-            -- 1. 기존과 동일한 토글 버튼 UI 생성
-            local ToggleBtn = Register(Create("TextButton", { Parent = SectionContainer, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Text = "", BorderSizePixel = 0 }), "Element")
-            ApplyElementStyle(ToggleBtn)
+            -- 1. 기존 UI 요소로 교체 (ApplyElementStyle 등 제거)
+            local ToggleBtn = Register(Create("TextButton", { Parent = page, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Text = "" }), "Element")
+            AddCorner(ToggleBtn, Fluxa.Theme.FrameCorner)
+            AddStroke(ToggleBtn, Fluxa.Theme.Outline, 1)
+            
             Register(Create("TextLabel", { Parent = ToggleBtn, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 0), Size = UDim2.new(1, -70, 1, 0), Font = Enum.Font.GothamMedium, Text = text, TextColor3 = Fluxa.Theme.Text, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }), "Text")
-            local Switch = Register(Create("Frame", { Parent = ToggleBtn, BackgroundColor3 = Fluxa.Theme.Sidebar, Position = UDim2.new(1, -54, 0.5, -11), Size = UDim2.new(0, 38, 0, 22) }), "Sidebar"); AddCorner(Switch, 16); Register(AddStroke(Switch, Fluxa.Theme.Outline, 1), "Outline")
+            local Switch = Register(Create("Frame", { Parent = ToggleBtn, BackgroundColor3 = Fluxa.Theme.Sidebar, Position = UDim2.new(1, -54, 0.5, -11), Size = UDim2.new(0, 38, 0, 22) }), "Sidebar"); AddCorner(Switch, 16); local SwitchStroke = AddStroke(Switch, Fluxa.Theme.Outline, 1)
             local Knob = Register(Create("Frame", { Parent = Switch, BackgroundColor3 = Fluxa.Theme.SubText, Position = UDim2.new(0, 3, 0.5, -8), Size = UDim2.new(0, 16, 0, 16) }), "SubText"); AddCorner(Knob, 16)
             
-            -- 2. 하위 요소들이 담길 숨겨진 컨테이너(SubPage) 생성
+            -- 2. 하위 요소들이 담길 컨테이너 (SectionContainer 대신 page 사용)
             local SubPage = Create("Frame", { 
-                Parent = SectionContainer, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
+                Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
                 AutomaticSize = Enum.AutomaticSize.Y, Visible = Toggled 
             })
-            Create("UIListLayout", { Parent = SubPage, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, IsGrouped and 1 or 8) })
-            -- 하위 요소임을 알 수 있게 좌측 여백(들여쓰기) 16px 추가
+            Create("UIListLayout", { Parent = SubPage, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
             Create("UIPadding", { Parent = SubPage, PaddingLeft = UDim.new(0, 16) }) 
 
             local function Update()
                 Fluxa.Flags[text] = Toggled
                 if Toggled then 
                     Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Accent}); Tween(Switch.UIStroke, {Color = Fluxa.Theme.Accent}); Tween(Knob, {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.new(1,1,1)})
-                    SubPage.Visible = true -- 켜면 하위 요소 표시
+                    SubPage.Visible = true
                 else 
                     Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Sidebar}); Tween(Switch.UIStroke, {Color = Fluxa.Theme.Outline}); Tween(Knob, {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Fluxa.Theme.SubText})
-                    SubPage.Visible = false -- 끄면 하위 요소 숨김
+                    SubPage.Visible = false
                 end
                 if callback then callback(Toggled) end
             end
             if default then Update() end
             ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
 
-            -- 3. 핵심: 숨겨진 컨테이너(SubPage)를 부모로 삼는 '새로운 섹션'을 생성하여 반환!
-            return CreateSection(SubPage, nil)
+            -- 3. 새로운 섹션 반환
+            return CreateSection(SubPage)
         end
 
         function SectionFuncs:Button(text, callback)
