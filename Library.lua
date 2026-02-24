@@ -328,7 +328,7 @@ function Fluxa:Window(options)
             local Toggled = default or false
             Fluxa.Flags[text] = Toggled
             
-            -- 1. 기존 UI 요소로 교체 (ApplyElementStyle 등 제거)
+            -- 1. 토글 UI 생성
             local ToggleBtn = Register(Create("TextButton", { Parent = page, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Text = "" }), "Element")
             AddCorner(ToggleBtn, Fluxa.Theme.FrameCorner)
             AddStroke(ToggleBtn, Fluxa.Theme.Outline, 1)
@@ -337,29 +337,52 @@ function Fluxa:Window(options)
             local Switch = Register(Create("Frame", { Parent = ToggleBtn, BackgroundColor3 = Fluxa.Theme.Sidebar, Position = UDim2.new(1, -54, 0.5, -11), Size = UDim2.new(0, 38, 0, 22) }), "Sidebar"); AddCorner(Switch, 16); local SwitchStroke = AddStroke(Switch, Fluxa.Theme.Outline, 1)
             local Knob = Register(Create("Frame", { Parent = Switch, BackgroundColor3 = Fluxa.Theme.SubText, Position = UDim2.new(0, 3, 0.5, -8), Size = UDim2.new(0, 16, 0, 16) }), "SubText"); AddCorner(Knob, 16)
             
-            -- 2. 하위 요소들이 담길 컨테이너 (SectionContainer 대신 page 사용)
-            local SubPage = Create("Frame", { 
+            -- 2. 트리 구조(Tree)를 위한 래퍼(Wrapper) 생성
+            local SubPageWrapper = Create("Frame", { 
                 Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
                 AutomaticSize = Enum.AutomaticSize.Y, Visible = Toggled 
             })
+            
+            -- [핵심 1] 파일 트리 수직선 (│)
+            local TreeLine = Register(Create("Frame", {
+                Parent = SubPageWrapper, BackgroundColor3 = Fluxa.Theme.Outline,
+                Size = UDim2.new(0, 1, 1, -21), Position = UDim2.new(0, 16, 0, 0), BorderSizePixel = 0
+            }), "Outline")
+
+            local SubPage = Create("Frame", { 
+                Parent = SubPageWrapper, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
+                AutomaticSize = Enum.AutomaticSize.Y
+            })
             Create("UIListLayout", { Parent = SubPage, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-            Create("UIPadding", { Parent = SubPage, PaddingLeft = UDim.new(0, 16) }) 
+            
+            -- 선을 그릴 공간 확보를 위해 들여쓰기 값을 16에서 32로 늘립니다.
+            Create("UIPadding", { Parent = SubPage, PaddingLeft = UDim.new(0, 32) }) 
+
+            -- [핵심 2] 하위 요소가 추가될 때마다 가로선(├──) 자동 생성
+            SubPage.ChildAdded:Connect(function(child)
+                if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                    Register(Create("Frame", {
+                        Parent = child, BackgroundColor3 = Fluxa.Theme.Outline,
+                        Size = UDim2.new(0, 16, 0, 1), Position = UDim2.new(0, -16, 0.5, 0), BorderSizePixel = 0
+                    }), "Outline")
+                end
+            end)
 
             local function Update()
                 Fluxa.Flags[text] = Toggled
                 if Toggled then 
                     Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Accent}); Tween(Switch.UIStroke, {Color = Fluxa.Theme.Accent}); Tween(Knob, {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.new(1,1,1)})
-                    SubPage.Visible = true
+                    SubPageWrapper.Visible = true
                 else 
                     Tween(Switch, {BackgroundColor3 = Fluxa.Theme.Sidebar}); Tween(Switch.UIStroke, {Color = Fluxa.Theme.Outline}); Tween(Knob, {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Fluxa.Theme.SubText})
-                    SubPage.Visible = false
+                    SubPageWrapper.Visible = false
                 end
                 if callback then callback(Toggled) end
             end
             if default then Update() end
             ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
 
-            -- 3. 새로운 섹션 반환
+            -- 3. 내부 SubPage에 아이템이 담기도록 섹션 반환
             return CreateSection(SubPage)
         end
 
