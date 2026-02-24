@@ -328,8 +328,14 @@ function Fluxa:Window(options)
             local Toggled = default or false
             Fluxa.Flags[text] = Toggled
             
-            -- 1. 토글 UI 생성
-            local ToggleBtn = Register(Create("TextButton", { Parent = page, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Text = "" }), "Element")
+            -- [핵심 1] 토글 버튼과 하위 요소를 하나로 묶는 최상위 컨테이너
+            local Container = Create("Frame", {
+                Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y
+            })
+            Create("UIListLayout", { Parent = Container, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+
+            -- 1. 토글 UI 생성 (Parent를 Container로 설정)
+            local ToggleBtn = Register(Create("TextButton", { Parent = Container, BackgroundColor3 = Fluxa.Theme.Element, Size = UDim2.new(1, 0, 0, 42), AutoButtonColor = false, Text = "" }), "Element")
             AddCorner(ToggleBtn, Fluxa.Theme.FrameCorner)
             AddStroke(ToggleBtn, Fluxa.Theme.Outline, 1)
             
@@ -337,13 +343,13 @@ function Fluxa:Window(options)
             local Switch = Register(Create("Frame", { Parent = ToggleBtn, BackgroundColor3 = Fluxa.Theme.Sidebar, Position = UDim2.new(1, -54, 0.5, -11), Size = UDim2.new(0, 38, 0, 22) }), "Sidebar"); AddCorner(Switch, 16); local SwitchStroke = AddStroke(Switch, Fluxa.Theme.Outline, 1)
             local Knob = Register(Create("Frame", { Parent = Switch, BackgroundColor3 = Fluxa.Theme.SubText, Position = UDim2.new(0, 3, 0.5, -8), Size = UDim2.new(0, 16, 0, 16) }), "SubText"); AddCorner(Knob, 16)
             
-            -- 2. 트리 구조(Tree)를 위한 래퍼(Wrapper) 생성
+            -- 2. 트리 구조(Tree) 래퍼 (Parent를 Container로 설정)
             local SubPageWrapper = Create("Frame", { 
-                Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
+                Parent = Container, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), 
                 AutomaticSize = Enum.AutomaticSize.Y, Visible = Toggled 
             })
             
-            -- [핵심 1] 파일 트리 수직선 (│)
+            -- 수직선 (│)
             local TreeLine = Register(Create("Frame", {
                 Parent = SubPageWrapper, BackgroundColor3 = Fluxa.Theme.Outline,
                 Size = UDim2.new(0, 1, 1, -21), Position = UDim2.new(0, 16, 0, 0), BorderSizePixel = 0
@@ -354,8 +360,6 @@ function Fluxa:Window(options)
                 AutomaticSize = Enum.AutomaticSize.Y
             })
             Create("UIListLayout", { Parent = SubPage, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-            
-            -- 선을 그릴 공간 확보를 위해 들여쓰기 값을 16에서 32로 늘립니다.
             Create("UIPadding", { Parent = SubPage, PaddingLeft = UDim.new(0, 32) }) 
 
             -- [핵심 2] 하위 요소가 추가될 때마다 가로선(├──) 자동 생성
@@ -363,7 +367,8 @@ function Fluxa:Window(options)
                 if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
                     Register(Create("Frame", {
                         Parent = child, BackgroundColor3 = Fluxa.Theme.Outline,
-                        Size = UDim2.new(0, 16, 0, 1), Position = UDim2.new(0, -16, 0.5, 0), BorderSizePixel = 0
+                        -- Scale 0.5 대신 Offset 21로 고정하여, 컨테이너가 커져도 선이 항상 버튼 중앙에 오도록 고정!
+                        Size = UDim2.new(0, 16, 0, 1), Position = UDim2.new(0, -16, 0, 21), BorderSizePixel = 0
                     }), "Outline")
                 end
             end)
@@ -382,7 +387,7 @@ function Fluxa:Window(options)
             if default then Update() end
             ToggleBtn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
 
-            -- 3. 내부 SubPage에 아이템이 담기도록 섹션 반환
+            -- 3. 새로운 섹션 반환
             return CreateSection(SubPage)
         end
 
