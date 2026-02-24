@@ -453,6 +453,31 @@ function Fluxa:Window(options)
         end
         return SectionFuncs
     end
+
+
+    function WindowFuncs:Tab(name)
+            local Btn, Text, Ind, Page = CreateTabBtn(name, TabContainer, 0)
+            local TabObj = {Btn = Btn, Text = Text, Indicator = Ind, Page = Page}
+            table.insert(Tabs, TabObj)
+            
+            Btn.MouseButton1Click:Connect(function() ActivateTab(TabObj) end)
+            if #Tabs == 1 then ActivateTab(TabObj) end
+            
+            local TabFuncs = {}
+            function TabFuncs:Section(text) 
+                -- 섹션 제목(Header) 생성 로직
+                if text then
+                    if #Page:GetChildren() > 2 then Create("Frame", {Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 8)}) end
+                    local Label = Register(Create("TextLabel", { Parent = Page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28), Font = Enum.Font.GothamBold, Text = string.upper(text), TextColor3 = Fluxa.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }), "Accent")
+                    Create("UIPadding", {Parent = Label, PaddingLeft = UDim.new(0, 4)})
+                end
+                return CreateSection(Page) 
+            end
+            return TabFuncs
+        end
+
+
+
 --// 5. SETTINGS TAB (마지막 탭 아래에 자동 추가)
     local SettingsBtn, SettingsText, SettingsInd, SettingsPage = CreateTabBtn("Settings", TabContainer, 9999)
     local SettingsTabObj = {Btn = SettingsBtn, Text = SettingsText, Indicator = SettingsInd, Page = SettingsPage}
