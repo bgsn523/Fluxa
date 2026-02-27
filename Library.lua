@@ -107,6 +107,30 @@ function Fluxa:UpdateTheme()
     end
 end
 
+Fluxa.UpdateMap = {} -- 불러오기 시 UI를 갱신할 함수 저장소
+
+-- JSON 저장 시 Color3 호환을 위한 변환 함수
+local function EncodeData(data)
+    local t = {}
+    for k, v in pairs(data) do
+        if typeof(v) == "Color3" then t[k] = "RGB:"..v.R..","..v.G..","..v.B
+        else t[k] = v end
+    end
+    return HttpService:JSONEncode(t)
+end
+
+local function DecodeData(str)
+    local t = HttpService:JSONDecode(str)
+    local res = {}
+    for k, v in pairs(t) do
+        if type(v) == "string" and v:sub(1,4) == "RGB:" then
+            local s = v:sub(5):split(",")
+            res[k] = Color3.new(tonumber(s[1]), tonumber(s[2]), tonumber(s[3]))
+        else res[k] = v end
+    end
+    return res
+end
+
 local function Register(obj, themeKey)
     if Fluxa.Registry[themeKey] then
         table.insert(Fluxa.Registry[themeKey], obj)
