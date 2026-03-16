@@ -432,8 +432,87 @@ function Fluxa:Window(options)
 	end
 
 	-- SECTION & ELEMENTS
-	local function CreateSection(page)
+	local function CreateSection(page, groupTitle)
 		local SectionFuncs = {}
+
+		-- groupTitle이 있으면 그룹 박스 래퍼를 생성하고 내부 page로 교체
+		if groupTitle then
+			-- 그룹 전체 컨테이너 (AutomaticSize Y로 내용에 맞게 늘어남)
+			local GroupBox = Register(Create("Frame", {
+				Parent = page,
+				BackgroundColor3 = Fluxa.Theme.Sidebar,
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BorderSizePixel = 0,
+			}), "Sidebar")
+			AddCorner(GroupBox, Fluxa.Theme.FrameCorner)
+			AddStroke(GroupBox, Fluxa.Theme.Outline, 1)
+
+			-- 그룹 제목 헤더 바 (상단 스트립)
+			local Header = Register(Create("Frame", {
+				Parent = GroupBox,
+				BackgroundColor3 = Fluxa.Theme.Element,
+				Size = UDim2.new(1, 0, 0, 32),
+				BorderSizePixel = 0,
+				ZIndex = 2,
+			}), "Element")
+			AddCorner(Header, Fluxa.Theme.FrameCorner)
+			-- 헤더 하단 코너만 직각으로 만들기 위해 채우기 프레임 추가
+			Create("Frame", {
+				Parent = Header,
+				BackgroundColor3 = Fluxa.Theme.Element,
+				Size = UDim2.new(1, 0, 0, Fluxa.Theme.FrameCorner),
+				Position = UDim2.new(0, 0, 1, -Fluxa.Theme.FrameCorner),
+				BorderSizePixel = 0,
+				ZIndex = 2,
+			})
+			-- Accent 컬러 포인트 선 (왼쪽)
+			local AccentBar = Register(Create("Frame", {
+				Parent = Header,
+				BackgroundColor3 = Fluxa.Theme.Accent,
+				Size = UDim2.new(0, 2, 1, -10),
+				Position = UDim2.new(0, 6, 0, 5),
+				BorderSizePixel = 0,
+				ZIndex = 3,
+			}), "Accent")
+			AddCorner(AccentBar, 2)
+			-- 그룹 제목 텍스트
+			Register(Create("TextLabel", {
+				Parent = Header,
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0, 16, 0, 0),
+				Size = UDim2.new(1, -16, 1, 0),
+				Font = Enum.Font.GothamBold,
+				Text = string.upper(groupTitle),
+				TextColor3 = Fluxa.Theme.Text,
+				TextSize = 11,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 3,
+			}), "Text")
+
+			-- 내부 요소들이 들어갈 스크롤 없는 frame
+			local InnerPage = Create("Frame", {
+				Parent = GroupBox,
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0, 0, 0, 32),
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+			})
+			Create("UIListLayout", {
+				Parent = InnerPage,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 8),
+			})
+			Create("UIPadding", {
+				Parent = InnerPage,
+				PaddingTop = UDim.new(0, 10),
+				PaddingLeft = UDim.new(0, 10),
+				PaddingRight = UDim.new(0, 10),
+				PaddingBottom = UDim.new(0, 10),
+			})
+			-- 이후 모든 요소는 InnerPage 안에 넣음
+			page = InnerPage
+		end
 
 		local function AddHeader(text)
 			-- Header Title (titleText가 있을 때만 생성하도록 수정)
@@ -1411,37 +1490,34 @@ function Fluxa:Window(options)
 		ActivateTab(SettingsTabObj)
 	end)
 
-	-- [[ 1. CONFIG MANAGER (Grouped Section) ]]
-	-- 섹션에 제목("Configuration")을 부여하면 Grouped 스타일이 깔끔하게 적용됩니다.
-	local ConfigSec = CreateSection(SettingsPage, "Configuration")
+	-- [[ SETTINGS TAB 정리된 그룹 구조 ]]
 
-	ConfigSec:Toggle("Config Manager", true)
+	-- ─── GROUP 1: Config Manager ───────────────────
+	local ConfigSec = CreateSection(SettingsPage, "Config Manager")
+
 	local CfgName = "default"
 	ConfigSec:TextBox("Config Name", function(t)
-		CfgName = t
+		CfgName = t ~= "" and t or "default"
 	end)
 
 	local function GetConfigs()
-		if not listfiles then
-			return {}
-		end
-		local files = listfiles(Fluxa.ConfigFolder)
+		if not listfiles then return {} end
 		local names = {}
-		for _, file in pairs(files) do
+		for _, file in pairs(listfiles(Fluxa.ConfigFolder)) do
 			local name = file:match("([^/]+)%.json$")
-			if name then
-				table.insert(names, name)
-			end
+			if name then table.insert(names, name) end
 		end
 		return names
 	end
 
-	ConfigSec:Dropdown("Select Config", GetConfigs(), function(val)
+	ConfigSec:Dropdown("Load Config", GetConfigs(), function(val)
 		CfgName = val
+		if readfile and isfile(Fluxa.ConfigFolder .. "/" .. val .. ".json") then
+			Fluxa.Flags = HttpService:JSONDecode(readfile(Fluxa.ConfigFolder .. "/" .. val .. ".json"))
+		end
 	end)
 
-	-- [추가됨] Config 리스트 새로고침 버튼
-	ConfigSec:Button("Refresh Configs", function()
+	ConfigSec:Button("Refresh List", function()
 		ConfigSec:RefreshDropdown(GetConfigs())
 	end)
 
@@ -1450,43 +1526,35 @@ function Fluxa:Window(options)
 			writefile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json", HttpService:JSONEncode(Fluxa.Flags))
 		end
 	end)
-	ConfigSec:Button("Load Config", function()
-		if readfile and isfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json") then
-			local data = HttpService:JSONDecode(readfile(Fluxa.ConfigFolder .. "/" .. CfgName .. ".json"))
-			Fluxa.Flags = data
-		end
+
+	-- ─── GROUP 2: Theme Editor ─────────────────────
+	local ThemeSec = CreateSection(SettingsPage, "Theme Editor")
+
+	local ThemeName = "default"
+	ThemeSec:TextBox("Theme Name", function(t)
+		ThemeName = t ~= "" and t or "default"
 	end)
 
-	-- [[ 2. THEME CUSTOMIZER (Grouped Section) ]]
-	-- 테마 설정도 별도의 섹션으로 분리하여 두 개의 깔끔한 "케이크" 덩어리로 만듭니다.
-	local ThemeSec = CreateSection(SettingsPage, "Theme Customizer")
-
-	ThemeSec:Toggle("Theme Manager", true)
 	local function GetThemes()
-		if not listfiles then
-			return {}
-		end
-		local files = listfiles(Fluxa.ThemeFolder)
+		if not listfiles then return {} end
 		local names = {}
-		for _, file in pairs(files) do
+		for _, file in pairs(listfiles(Fluxa.ThemeFolder)) do
 			local name = file:match("([^/]+)%.json$")
-			if name then
-				table.insert(names, name)
-			end
+			if name then table.insert(names, name) end
 		end
 		return names
 	end
 
-	local ThemeName = "default"
-	ThemeSec:TextBox("Theme Name", function(t)
-		ThemeName = t
-	end)
-	ThemeSec:Dropdown("Select Theme", GetThemes(), function(val)
+	ThemeSec:Dropdown("Load Theme", GetThemes(), function(val)
 		ThemeName = val
+		if readfile and isfile(Fluxa.ThemeFolder .. "/" .. val .. ".json") then
+			local t = HttpService:JSONDecode(readfile(Fluxa.ThemeFolder .. "/" .. val .. ".json"))
+			for k, v in pairs(t) do Fluxa.Theme[k] = v end
+			Fluxa:UpdateTheme()
+		end
 	end)
 
-	-- [추가됨] Theme 리스트 새로고침 버튼
-	ThemeSec:Button("Refresh Themes", function()
+	ThemeSec:Button("Refresh List", function()
 		ThemeSec:RefreshDropdown(GetThemes())
 	end)
 
@@ -1496,10 +1564,12 @@ function Fluxa:Window(options)
 		end
 	end)
 
-	ThemeSec:Toggle("Edit Mode", true)
-	local keys = { "Accent", "Background", "Sidebar", "Element", "Text", "SubText", "Outline" }
-	for _, key in pairs(keys) do
-		ThemeSec:ColorPicker(key, Fluxa.Theme[key], function(color)
+	-- ─── GROUP 3: Color Customizer ─────────────────
+	local ColorSec = CreateSection(SettingsPage, "Color Customizer")
+
+	local colorKeys = { "Accent", "Background", "Sidebar", "Element", "Text", "SubText", "Outline" }
+	for _, key in pairs(colorKeys) do
+		ColorSec:ColorPicker(key, Fluxa.Theme[key], function(color)
 			Fluxa.Theme[key] = color
 			Fluxa:UpdateTheme()
 		end)
