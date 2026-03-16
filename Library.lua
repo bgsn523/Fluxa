@@ -1509,4 +1509,261 @@ function Fluxa:Window(options)
 	return WindowFuncs
 end
 
+--// 5. Notification System (Toast)
+--[[
+    Fluxa:Notify({
+        Title    = "Hello",          -- 알림 제목 (필수)
+        Content  = "This is a msg.", -- 알림 내용 (선택)
+        Duration = 4,                -- 표시 시간(초), 기본값 4
+        Type     = "info",           -- "info" | "success" | "warning" | "error"
+    })
+]]
+
+do
+	local NotifyContainer = Create("Frame", {
+		Parent = ScreenGui,
+		BackgroundTransparency = 1,
+		Position = UDim2.new(1, -20, 1, -20),
+		Size = UDim2.new(0, 320, 1, 0),
+		AnchorPoint = Vector2.new(1, 1),
+		ZIndex = 100,
+	})
+	Create("UIListLayout", {
+		Parent = NotifyContainer,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		Padding = UDim.new(0, 10),
+	})
+
+	local notifyCount = 0
+
+	local TypeColors = {
+		info    = Color3.fromRGB(100, 130, 240), -- Accent blue
+		success = Color3.fromRGB(85,  210, 130),
+		warning = Color3.fromRGB(250, 200, 80),
+		error   = Color3.fromRGB(245, 80,  80),
+	}
+
+	local TypeIcons = {
+		info    = "i", -- 폰트 기반 디자인을 위해 알파벳 사용
+		success = "✓",
+		warning = "!",
+		error   = "✕",
+	}
+
+	function Fluxa:Notify(options)
+		options = options or {}
+		local title    = options.Title    or "Notification"
+		local content  = options.Content  or ""
+		local duration = options.Duration or 4
+		local ntype    = options.Type     or "info"
+
+		local accentColor = TypeColors[ntype] or TypeColors.info
+		local iconChar    = TypeIcons[ntype]  or TypeIcons.info
+
+		notifyCount = notifyCount + 1
+		local thisOrder = notifyCount
+
+		-- 동적으로 높이 계산
+		local titleHeight = 16
+		local contentHeight = (content ~= "") and 16 or 0
+		local gap = (content ~= "") and 4 or 0
+		local paddingTop = 14
+		local paddingBottom = 16
+		local cardH = paddingTop + titleHeight + contentHeight + gap + paddingBottom
+
+		-- Outer wrapper (리스트 레이아웃용 및 사라질 때 애니메이션 유지)
+		local Wrapper = Create("Frame", {
+			Parent = NotifyContainer,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0, cardH),
+			ClipsDescendants = false,
+			LayoutOrder = thisOrder,
+		})
+
+		-- 그림자 대신 가벼운 하이라이트를 주는 카드 본체
+		local Card = Create("Frame", {
+			Parent = Wrapper,
+			BackgroundColor3 = Fluxa.Theme.Element, -- 기존 다크 배경 유지
+			Size = UDim2.new(1, 0, 0, cardH),
+			Position = UDim2.new(1, 40, 0, 0), -- 시작: 조금 더 오른쪽 바깥
+			ClipsDescendants = true, -- 게이지바나 내부 요소가 모서리를 넘지 않도록
+			ZIndex = 100,
+		})
+		AddCorner(Card, 8) -- 조금 더 둥글고 부드러운 코너
+		
+		-- 내부 빛반사 효과 (가짜 글래스모피즘 강조)
+		Create("UIStroke", {
+			Parent = Card,
+			Color = Color3.fromRGB(255, 255, 255),
+			Transparency = 0.92,
+			Thickness = 1,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		})
+
+		-- 왼쪽 컬러 바 (얇은 필 형태 + UIStroke 글로우)
+		local GlowBar = Create("Frame", {
+			Parent = Card,
+			BackgroundColor3 = accentColor,
+			Size = UDim2.new(0, 2, 1, -20), -- 얇게(2px), 위아래 마진
+			Position = UDim2.new(0, 8, 0, 10),
+			ZIndex = 101,
+			BorderSizePixel = 0,
+		})
+		AddCorner(GlowBar, 4)
+		-- UIStroke를 이용한 빛 번짐 효과
+		Create("UIStroke", {
+			Parent = GlowBar,
+			Color = accentColor,
+			Transparency = 0.5,
+			Thickness = 2,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		})
+
+		-- 아이콘 배경 (원형)
+		local IconBG = Create("Frame", {
+			Parent = Card,
+			BackgroundColor3 = accentColor,
+			BackgroundTransparency = 0.85, -- 은은한 글로우 느낌
+			Position = UDim2.new(0, 14, 0.5, -16),
+			Size = UDim2.new(0, 32, 0, 32),
+			ZIndex = 101,
+		})
+		AddCorner(IconBG, 16) -- 원형
+		
+		-- 아이콘 텍스트
+		Create("TextLabel", {
+			Parent = IconBG,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 1, 0),
+			Font = Enum.Font.GothamBlack,
+			Text = iconChar,
+			TextColor3 = accentColor,
+			TextSize = 15,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			ZIndex = 102,
+		})
+
+		-- 텍스트 컨테이너
+		local TextContainer = Create("Frame", {
+			Parent = Card,
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 60, 0, paddingTop),
+			Size = UDim2.new(1, -74, 1, -(paddingTop + paddingBottom)),
+			ZIndex = 101,
+		})
+		Create("UIListLayout", {
+			Parent = TextContainer,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, gap),
+		})
+
+		-- 제목
+		Create("TextLabel", {
+			Parent = TextContainer,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0, titleHeight),
+			Font = Enum.Font.GothamBold,
+			Text = title,
+			TextColor3 = Color3.fromRGB(245, 245, 250), -- Theme.Text 보다 살짝 더 밝고 선명하게
+			TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 101,
+			LayoutOrder = 1,
+		})
+
+		-- 내용 (있을 때만)
+		if content ~= "" then
+			Create("TextLabel", {
+				Parent = TextContainer,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, 0, 0, contentHeight),
+				Font = Enum.Font.GothamMedium,
+				Text = content,
+				TextColor3 = Fluxa.Theme.SubText,
+				TextSize = 13,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				ZIndex = 101,
+				LayoutOrder = 2,
+			})
+		end
+
+		-- 진행 바 래퍼 (카드 모서리와 동일한 ClipsDescendants 적용)
+		-- ProgressBG를 카드 내부 좌표로 배치해야 ClipsDescendants가 정상 동작함
+		local ProgressBG = Create("Frame", {
+			Parent = Card,
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			BackgroundTransparency = 0.75,
+			Position = UDim2.new(0, 0, 1, -3), -- 카드 내부 기준. 하단 3px 위
+			Size = UDim2.new(1, 0, 0, 3),     -- 두께 3px
+			ZIndex = 102,
+			ClipsDescendants = true,          -- Progress 바가 여기서 잘림
+			BorderSizePixel = 0,
+		})
+		-- 카드와 동일한 radius로 모서리 처리 → Card의 ClipsDescendants가 이걸 카드 곡률로 자름
+		AddCorner(ProgressBG, 8)
+		
+		-- 실제 진행 바
+		local Progress = Create("Frame", {
+			Parent = ProgressBG,
+			BackgroundColor3 = accentColor,
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0, 0, 0, 0),
+			ZIndex = 103,
+			BorderSizePixel = 0,
+		})
+		AddCorner(Progress, 8)
+		
+		-- 진행 바 그라데이션 (왼쪽 밝게 -> 오른쪽 살짝 투명하게)
+		local UIGrad = Instance.new("UIGradient")
+		UIGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, accentColor)
+		})
+		UIGrad.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.4),
+			NumberSequenceKeypoint.new(0.5, 0),
+			NumberSequenceKeypoint.new(1, 0)
+		})
+		UIGrad.Parent = Progress
+
+		-- [애니메이션 설정]
+		-- 등장: 살짝 튕기는 Back Easing + 위치 이동
+		TweenService:Create(
+			Card,
+			TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Position = UDim2.new(0, 0, 0, 0) }
+		):Play()
+
+		-- 진행 바 감소 (우측에서 좌측으로)
+		TweenService:Create(
+			Progress,
+			TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+			{ Size = UDim2.new(0, 0, 1, 0) }
+		):Play()
+
+		-- duration 후 사라지기 애니메이션
+		task.delay(duration, function()
+			-- 카드가 오른쪽으로 약간 가속하며 빠짐 (Back.In)
+			TweenService:Create(
+				Card,
+				TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+				{ Position = UDim2.new(1, 60, 0, 0) }
+			):Play()
+			
+			task.wait(0.35)
+			-- Wrapper 높이를 줄여 다른 알림이 부드럽게 올라가게 양보
+			TweenService:Create(
+				Wrapper,
+				TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Size = UDim2.new(1, 0, 0, 0) }
+			):Play()
+			
+			task.wait(0.35)
+			Wrapper:Destroy()
+		end)
+	end
+end
+
 return Fluxa
