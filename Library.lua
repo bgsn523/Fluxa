@@ -256,6 +256,37 @@ function Fluxa:Window(options)
 		"Accent"
 	)
 
+	-- [[ CLOSE (HIDE) BUTTON ]]
+	local CloseBtn = Register(
+		Create("TextButton", {
+			Parent = TopBar,
+			BackgroundColor3 = Fluxa.Theme.Element,
+			Position = UDim2.new(1, -34, 0, 6),
+			Size = UDim2.new(0, 28, 0, 28),
+			AutoButtonColor = false,
+			Text = "X", -- 깨지지 않는 기본 알파벳 대문자 X로 변경
+			Font = Enum.Font.GothamBold,
+			TextSize = 14,
+			TextColor3 = Fluxa.Theme.SubText,
+		}),
+		"Element"
+	)
+	AddCorner(CloseBtn, 6)
+
+	-- 호버 효과 (부드러운 색상으로 변경)
+	CloseBtn.MouseEnter:Connect(function()
+		-- 강렬한 빨간색 대신, 테마 내에서 한 단계 밝은/다른 색을 사용하여 부드럽게 강조
+		Tween(CloseBtn, { BackgroundColor3 = Fluxa.Theme.Hover, TextColor3 = Fluxa.Theme.Text }, 0.15)
+	end)
+	CloseBtn.MouseLeave:Connect(function()
+		Tween(CloseBtn, { BackgroundColor3 = Fluxa.Theme.Element, TextColor3 = Fluxa.Theme.SubText }, 0.15)
+	end)
+
+	-- 클릭 시 창 숨기기
+	CloseBtn.MouseButton1Click:Connect(function()
+		Main.Visible = false
+	end)
+
 	MakeDraggable(TopBar, Main)
 
 	-- [[ SIDEBAR ]] --
@@ -830,8 +861,10 @@ function Fluxa:Window(options)
 					callback()
 				end
 			end)
+			return Btn
 		end
 		function SectionFuncs:TextBox(text, callback)
+			-- 전체 컨테이너
 			local Frame = Register(
 				Create(
 					"Frame",
@@ -839,8 +872,10 @@ function Fluxa:Window(options)
 				),
 				"Element"
 			)
-			AddCorner(Frame, 4)
-			AddStroke(Frame, Fluxa.Theme.Outline, 1)
+			AddCorner(Frame, Fluxa.Theme.FrameCorner)
+			local _FrameStroke = AddStroke(Frame, Fluxa.Theme.Outline, 1)
+
+			-- 왼쪽 라벨
 			Register(
 				Create(
 					"TextLabel",
@@ -848,7 +883,7 @@ function Fluxa:Window(options)
 						Parent = Frame,
 						BackgroundTransparency = 1,
 						Position = UDim2.new(0, 14, 0, 0),
-						Size = UDim2.new(0.5, 0, 1, 0),
+						Size = UDim2.new(0.45, 0, 1, 0),
 						Text = text,
 						Font = Enum.Font.GothamMedium,
 						TextSize = 14,
@@ -858,25 +893,57 @@ function Fluxa:Window(options)
 				),
 				"Text"
 			)
+
+			-- 오른쪽 입력 영역 배경 컨테이너
+			local InputBG = Register(
+				Create("Frame", {
+					Parent = Frame,
+					BackgroundColor3 = Fluxa.Theme.Sidebar,
+					Position = UDim2.new(0.45, 0, 0.5, -13),
+					Size = UDim2.new(0.55, -12, 0, 26),
+					BorderSizePixel = 0,
+				}),
+				"Sidebar"
+			)
+			AddCorner(InputBG, 6)
+			local InputStroke = Create("UIStroke", {
+				Parent = InputBG,
+				Color = Fluxa.Theme.Outline,
+				Thickness = 1,
+				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			})
+			table.insert(Fluxa.Registry.Outline, InputStroke)
+
+			-- 실제 텍스트박스
 			local Box = Register(
 				Create(
 					"TextBox",
 					{
-						Parent = Frame,
+						Parent = InputBG,
 						BackgroundTransparency = 1,
-						Position = UDim2.new(0.5, 0, 0, 0),
-						Size = UDim2.new(0.5, -14, 1, 0),
+						Position = UDim2.new(0, 8, 0, 0),
+						Size = UDim2.new(1, -16, 1, 0),
 						Text = "",
 						Font = Enum.Font.Gotham,
 						TextSize = 13,
-						TextXAlignment = Enum.TextXAlignment.Right,
-						TextColor3 = Fluxa.Theme.Accent,
-						PlaceholderText = "...",
+						TextXAlignment = Enum.TextXAlignment.Left,
+						TextColor3 = Fluxa.Theme.Text,
+						PlaceholderText = "Type in...",
+						PlaceholderColor3 = Fluxa.Theme.SubText,
+						ClearTextOnFocus = false,
 					}
 				),
-				"Accent"
+				"Text"
 			)
+
+			-- 포커스 하이라이트
+			Box.Focused:Connect(function()
+				Tween(InputStroke, { Color = Fluxa.Theme.Accent })
+				Tween(InputBG, { BackgroundColor3 = Fluxa.Theme.Element })
+			end)
 			Box.FocusLost:Connect(function()
+				Tween(InputStroke, { Color = Fluxa.Theme.Outline })
+				Tween(InputBG, { BackgroundColor3 = Fluxa.Theme.Sidebar })
 				if callback then
 					callback(Box.Text)
 				end
@@ -1491,6 +1558,59 @@ function Fluxa:Window(options)
 	end)
 
 	-- [[ SETTINGS TAB 정리된 그룹 구조 ]]
+
+	-- ─── GROUP 0: Interface / Keybind ──────────────
+	local ToggleKey = Enum.KeyCode.RightShift
+	local IsListening = false
+
+	local _KeybindSec = CreateSection(SettingsPage, "Interface")
+
+	-- 버튼을 추가하고 반환된 인스턴스를 직접 사용
+	local KeyBtn = _KeybindSec:Button("[RightShift]  —  Click to rebind", function() end)
+
+	local function FormatKeyName(key)
+		local name = key.Name
+		if name == "Return" then return "Enter" end
+		if name == "RightShift" then return "Right Shift" end
+		if name == "LeftShift" then return "Left Shift" end
+		if name == "RightControl" then return "Right Ctrl" end
+		if name == "LeftControl" then return "Left Ctrl" end
+		if name == "RightAlt" then return "Right Alt" end
+		if name == "LeftAlt" then return "Left Alt" end
+		-- 그 외에도 숫자패드는 KeypadOne 등이라서, 필요하면 여기 추가 가능
+		return name
+	end
+
+	local function UpdateKeyLabel()
+		KeyBtn.Text = "[" .. FormatKeyName(ToggleKey) .. "]  —  Click to rebind"
+	end
+
+	-- 기본 클릭 연결을 끊고 키바인드 전용 로직으로 교체
+	KeyBtn.MouseButton1Click:Connect(function()
+		if IsListening then return end
+		IsListening = true
+		KeyBtn.Text = "⬤  Press any key..."
+		Tween(KeyBtn, { TextColor3 = Fluxa.Theme.Accent }, 0.1)
+		local conn
+		conn = UserInputService.InputBegan:Connect(function(input, gpe)
+			if gpe then return end
+			if input.UserInputType == Enum.UserInputType.Keyboard then
+				ToggleKey = input.KeyCode
+				IsListening = false
+				conn:Disconnect()
+				UpdateKeyLabel()
+				Tween(KeyBtn, { TextColor3 = Fluxa.Theme.Text }, 0.15)
+			end
+		end)
+	end)
+
+	-- 실제 UI 토글 리스너
+	UserInputService.InputBegan:Connect(function(input, gpe)
+		if gpe or IsListening then return end
+		if input.KeyCode == ToggleKey then
+			Main.Visible = not Main.Visible
+		end
+	end)
 
 	-- ─── GROUP 1: Config Manager ───────────────────
 	local ConfigSec = CreateSection(SettingsPage, "Config Manager")
