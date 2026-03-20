@@ -1505,6 +1505,128 @@ function Fluxa:Window(options)
 			end)
 			return SectionFuncs
 		end
+
+		function SectionFuncs:Keybind(text, default, callback)
+			local currentKey = default or Enum.KeyCode.Unknown
+			local currentMouse = nil
+			local isListening = false
+			Fluxa.Flags[text] = typeof(currentKey) == "EnumItem" and currentKey.Name or "None"
+
+			local function FormatKeyName(input)
+				if not input or input == Enum.KeyCode.Unknown then return "None" end
+				local name = input.Name
+				if name == "Return" then return "Enter" end
+				if name == "RightShift" then return "Right Shift" end
+				if name == "LeftShift" then return "Left Shift" end
+				if name == "RightControl" then return "Right Ctrl" end
+				if name == "LeftControl" then return "Left Ctrl" end
+				if name == "RightAlt" then return "Right Alt" end
+				if name == "LeftAlt" then return "Left Alt" end
+				if name == "MouseButton1" then return "MB1" end
+				if name == "MouseButton2" then return "MB2" end
+				if name == "MouseButton3" then return "MB3" end
+				return name
+			end
+
+			local function GetLabelText()
+				local input = currentMouse or currentKey
+				return "[" .. FormatKeyName(input) .. "]  —  " .. text
+			end
+
+			local Btn = Register(
+				Create(
+					"TextButton",
+					{
+						Parent = page,
+						BackgroundColor3 = Fluxa.Theme.Element,
+						Size = UDim2.new(1, 0, 0, 42),
+						AutoButtonColor = false,
+						Font = Enum.Font.GothamMedium,
+						Text = GetLabelText(),
+						TextColor3 = Fluxa.Theme.Text,
+						TextSize = 14,
+					}
+				),
+				"Element"
+			)
+			AddCorner(Btn, Fluxa.Theme.BtnCorner)
+			AddStroke(Btn, Fluxa.Theme.Outline, 1)
+
+			Btn.MouseEnter:Connect(function()
+				Tween(Btn, { BackgroundColor3 = Fluxa.Theme.Hover })
+			end)
+			Btn.MouseLeave:Connect(function()
+				Tween(Btn, { BackgroundColor3 = Fluxa.Theme.Element })
+			end)
+
+			Btn.MouseButton1Click:Connect(function()
+				if isListening then return end
+				isListening = true
+				Btn.Text = "⬤  Press any key..."
+				Tween(Btn, { TextColor3 = Fluxa.Theme.Accent }, 0.1)
+
+				local conn
+				conn = UserInputService.InputBegan:Connect(function(input, gpe)
+					if gpe then return end
+					
+					if input.UserInputType == Enum.UserInputType.Keyboard then
+						currentKey = input.KeyCode
+						currentMouse = nil
+						Fluxa.Flags[text] = currentKey.Name
+						isListening = false
+						conn:Disconnect()
+						Btn.Text = GetLabelText()
+						Tween(Btn, { TextColor3 = Fluxa.Theme.Text }, 0.15)
+					elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.MouseButton3 then
+						-- Filter out the initial click that started the listening
+						task.wait()
+						currentMouse = input.UserInputType
+						currentKey = Enum.KeyCode.Unknown
+						Fluxa.Flags[text] = currentMouse.Name
+						isListening = false
+						conn:Disconnect()
+						Btn.Text = GetLabelText()
+						Tween(Btn, { TextColor3 = Fluxa.Theme.Text }, 0.15)
+					end
+				end)
+			end)
+
+			UserInputService.InputBegan:Connect(function(input, gpe)
+				if gpe or isListening then return end
+				local triggered = false
+				
+				if currentMouse then
+					if input.UserInputType == currentMouse then
+						triggered = true
+					end
+				elseif currentKey ~= Enum.KeyCode.Unknown then
+					if input.KeyCode == currentKey then
+						triggered = true
+					end
+				end
+
+				if triggered and callback then
+					callback(currentMouse or currentKey)
+				end
+			end)
+
+			local KeybindFuncs = {}
+			function KeybindFuncs:SetKey(key)
+				if typeof(key) == "EnumItem" then
+					if key.EnumType == Enum.KeyCode then
+						currentKey = key
+						currentMouse = nil
+					elseif key.EnumType == Enum.UserInputType then
+						currentMouse = key
+						currentKey = Enum.KeyCode.Unknown
+					end
+					Fluxa.Flags[text] = key.Name
+					Btn.Text = GetLabelText()
+				end
+			end
+			return KeybindFuncs
+		end
+
 		return SectionFuncs
 	end
 
