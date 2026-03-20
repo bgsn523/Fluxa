@@ -21,6 +21,8 @@ local AimbotSection = CombatTab:Section("이것은 section1이에요!")
 AimbotSection:Toggle("이것은 토글이에요!", false, function(state) print("Aimbot:", state) end)
 AimbotSection:Dropdown("이것은 드롭다운이에요!", {"Head", "Torso", "Random"}, function(v) print("Target:", v) end)
 
+AimbotSection:Keybind("이것은 키바인드에요!", Enum.KeyCode.F, function(key) print("Key pressed:", key.Name) end) 
+
 -- [ 중첩된 1단계 Expandable Toggle ]
 local AdvancedAimbot = AimbotSection:ExpandableToggle("이것은 확장토글이에요!", false, function(state) end)
 AdvancedAimbot:Toggle("이것은 토글이에요!", true, function(state) print("Prediction:", state) end)
